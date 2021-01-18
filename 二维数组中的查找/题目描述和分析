@@ -1,0 +1,157 @@
+题目描述
+在一个二维数组中（每个一维数组的长度相同），每一行都按照从左到右递增的顺序排序，每一列都按照从上到下递增的顺序排序。请完成一个函数，输入这样的一个二维数组和一个整数，判断数组中是否含有该整数。
+示例1
+输入
+7,[[1,2,8,9],[2,4,9,12],[4,7,10,13],[6,8,11,15]]
+返回值
+true
+
+题解：
+
+《剑指Offer》二维数组中的查找
+分享五种解题方法，仅为拓宽思路：
+（注：如果代码出现了段错误问题，可能是没有考虑到空数组，健壮性也是算法的一部分）
+
+一、左下/右上元素移动法：
+十分简单巧妙，在看了徘徊的路人甲的题解才后知后觉；
+设M=min(m,n)，N=max(m,n)，复杂度为O(N)，详见链接题解：
+链接：https://www.nowcoder.com/questionTerminal/abc3fe2ce8e146608e868a70efebf62e?f=discussion
+
+二、双折半查找法：
+是我提交时使用的方法，没有法一简洁明了，但是也挺好用，复杂度最坏情况为O(M * logN)，不过总体上还是比较优秀的，大概率可以取得O(logM + logN)的效率
+二维数组分为上下左右四个边界top，bottom，left，right：
+对上边界top进行折半查找，假设终止点为E，则可以将二维数组位于终止点E右边的矩形Rr排除，因为终止点E小于其右边相邻的元素E+1，而E+1是右边矩形Rr的最小元素(左上元素)
+同理，对下边界bottom折半，可以排除二维数组位于终止点E左边的矩形Rl排除，
+对左边界left折半，可以排除二维数组位于终止点E下边的矩形Rb排除，
+对右边界right折半，可以排除二维数组位于终止点E上边的矩形Rt排除，
+一轮过去，边界范围缩小，对由新边界组成的矩形重复以上操作，直到范围缩小为只有一个元素
+
+三、N行折半法：
+也是很容易就能想到的方法，每一行(列)都执行折半查找，持续M行(列)，复杂度为O(M*logN)
+
+四（一）、简单的十字分割法：
+亲测可用，使用十字将数组等分为四个区域，中间交叉点用来判断，因为左上区域和右下区域必然冲突，所以二者必然可以排除一个，即每次至少可以排除1/4的数据，接着对剩下的三个区域进行递归操作，当然可以利用左上右下元素来判断是否落在区域内来进行优化，直到只有一个元素，递归层数为：logN，不优化的话最底层节点数最多为3^logN，优化后节点数会少很多，实测效率还算不错
+
+四（二）、另一版本的十字分割法
+与上一个类似，只不过这里先在主对角线方向上进行折半查找操作，操作结束后，终止点的左上区域与右下区域都可以排除，这样就只剩下左下、右上两个区域，然后再进行递归。感觉上效率会比上个版本好，不过这个我没有去实现验证
+
+五、暴力法
+不解释，复杂度为O(M*N)
+
+下面给出双折半查找法的代码：
+
+class Solution {
+public:
+    bool Find(int target, vector<vector<int> > array) {
+        if (array.size()==0 || array[0].size()==0)
+            return false;
+        else {
+            int top = 0, bottom = array.size()-1;
+            int left = 0, right = array[0].size()-1;
+            int sLeft = 0, sRight = 0;
+            int sTop = 0, sBottom = 0;
+            int mid = 0;
+ 
+            for (;left<right || top<bottom;) {
+                //对上边界进行折半，可以缩小右边界
+                sLeft = left, sRight = right;
+                for (;sLeft<=sRight;) {
+                    mid = (sLeft + sRight) / 2;
+                    if (array[top][mid]==target) return true;
+                    else if (array[top][mid]<target) sLeft = mid+1;
+                    else sRight = mid-1;
+                }
+                if (mid<right) right = mid; //利用终止点缩小右边界
+                top++;
+ 
+                //对下边界进行折半，可以缩小左边界
+                sLeft = left, sRight = right;
+                for (;sLeft<=sRight;) {
+                    mid = (sLeft + sRight) / 2;
+                    if (array[bottom][mid]==target) return true;
+                    else if (array[bottom][mid]<target) sLeft = mid+1;
+                    else sRight = mid-1;
+                }
+                if (left<mid) left = mid; //利用终止点缩小左边界
+                bottom--;
+ 
+                //对左边界进行折半，可以缩小下边界
+                sTop = top, sBottom = bottom;
+                for (;sTop<=sBottom;) {
+                    mid = (sTop + sBottom) / 2;
+                    if (array[mid][left]==target) return true;
+                    else if (array[mid][left]<target) sTop = mid+1;
+                    else sBottom = mid-1;
+                }
+                if (mid<bottom) bottom = mid; //利用终止点缩小下边界
+                left++;
+ 
+                //对右边界进行折半，可以缩小上边界
+                sTop = top, sBottom = bottom;
+                for (;sTop<=sBottom;) {
+                    mid = (sTop + sBottom) / 2;
+                    if (array[mid][right]==target) return true;
+                    else if (array[mid][right]<target) sTop = mid+1;
+                    else sBottom = mid-1;
+                }
+                if (top<mid) top = mid; //利用终止点缩小上边界
+                right--;
+            }
+            if (array[top][left]==target) return true;
+            else return false;
+        }
+    }
+};
+下面是简单的十字分割法代码：
+
+class Solution {
+public:
+    bool Find(int target, vector<vector<int> > array) {
+        if (array.size()==0 || array[0].size()==0)
+            return false;
+        else {
+            return find_by_ten_shape_divide(array, target, 0, 0, array[0].size()-1, array.size()-1);
+        }
+    }
+ 
+    bool find_by_ten_shape_divide(vector<vector<int> > &datas, int target, int left, int top, int right, int bottom) {
+        // 递归终止的条件：当区域被分割为只有一个元素
+        if (left==right && top==bottom) {
+            if (datas[top][left] == target)
+                return true;
+            else return false;
+        }
+        // 利用头尾数据进行优化：不在区域内的直接false，可以减少递归节点数量
+        else if (datas[top][left]>target || datas[bottom][right]<target)
+            return false;
+        else {
+            // 水平、竖直方向各自等分
+            int cHoriz = (left + right) / 2;
+            int cVertic = (top + bottom) / 2;
+ 
+            if (datas[cVertic][cHoriz] == target)
+                return true;
+            else {
+                // 目标大于分割点则排除左上区域，对右下进行递归
+                if (datas[cVertic][cHoriz] < target) {
+                    if (cHoriz<right && cVertic<bottom &&
+                        find_by_ten_shape_divide(datas, target, cHoriz+1, cVertic+1, right, bottom))
+                        return true;
+                }
+                // 否则排除右下区域，对左上进行递归
+                else if ((left<cHoriz || top<cVertic) &&
+                         find_by_ten_shape_divide(datas, target, left, top, cHoriz, cVertic))
+                    return true;
+                // 对右上区域进行递归
+                if (cHoriz < right &&
+                    find_by_ten_shape_divide(datas, target, cHoriz+1, top, right, cVertic))
+                    return true;
+                // 对左下区域进行递归
+                if (cVertic < bottom &&
+                    find_by_ten_shape_divide(datas, target, left, cVertic+1, cHoriz, bottom))
+                    return true;
+                return false;
+            }
+        }
+    }
+};
